@@ -307,7 +307,7 @@ class MySQLManager:
                 paper = {
                     "domain": domain,
                     "title": title,
-                    "authors": author,  # 保持 author 为字符串
+                    "author": author,  # 保持 author 为字符串
                     "date": str(date),
                     "state": state,
                     "abstract": abstract,
@@ -328,7 +328,7 @@ class MySQLManager:
         从文件 domain_url_tag.csv 中导入数据到 domain_url_tag 表
         从文件 papers.csv 中导入数据到 papers 表
         """
-        import datetime
+        from datetime import datetime
         try:
             insert_query = """
             INSERT INTO domain_id (domain, id)
@@ -358,13 +358,13 @@ class MySQLManager:
                 """将单个论文记录存入数据库"""
                 paper_date = datetime.strptime(paper["date"], "%Y-%m-%d")
                 sql = """
-                INSERT INTO papers (domain, title, authors, date, state, abstract, paper_url, pdf_url)
+                INSERT INTO papers (domain, title, author, date, state, abstract, paper_url, pdf_url)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 values = (
                     paper["domain"],
                     paper["title"],
-                    paper["authors"],
+                    paper["author"],
                     paper_date,
                     paper["state"],
                     paper["abstract"],
