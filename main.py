@@ -3,7 +3,6 @@ from crawler import Crawler
 if __name__ == '__main__':
     site = 'https://openreview.net'
     crawler = Crawler(site)
-    # crawler.db_manager.save_all()
     # 创建 ArgumentParser 对象
     parser = argparse.ArgumentParser(description='openreview crawler')
     # 添加 --init 参数

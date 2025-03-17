@@ -1,5 +1,6 @@
 import mysql.connector
-
+import csv
+import json
 class MySQLManager:
     def __init__(self, user, password, host, port):
         self.config = {
@@ -268,6 +269,7 @@ class MySQLManager:
         """
         把 domain_id 导入文件 domain_id.csv 中
         把 domain_url_tag 导入文件 domain_url_tag.csv 中
+        把 papers 导入文件 papers.csv 中
         """
         try:
             select_query = """
@@ -290,6 +292,33 @@ class MySQLManager:
                 for row in rows:
                     f.write(','.join(row) + '\n')
             print("成功导出 domain_url_tag 表到 domain_url_tag.csv 文件！")
+            # 查询数据
+            select_query = """
+                SELECT domain, title, author, date, state, abstract, paper_url, pdf_url
+                FROM papers
+            """
+            self.cursor.execute(select_query)
+            rows = self.cursor.fetchall()
+            # 将数据转换为 JSON 格式
+            papers_data = []
+            for row in rows:
+                domain, title, author, date, state, abstract, paper_url, pdf_url = row
+                # 构造每篇论文的 JSON 对象，保持 author 为字符串
+                paper = {
+                    "domain": domain,
+                    "title": title,
+                    "authors": author,  # 保持 author 为字符串
+                    "date": str(date),
+                    "state": state,
+                    "abstract": abstract,
+                    "paper_url": paper_url,
+                    "pdf_url": pdf_url
+                }
+                papers_data.append(paper)
+            # 将数据写入 JSON 文件
+            with open('papers.json', 'w', encoding='utf-8') as f:
+                json.dump(papers_data, f, ensure_ascii=False, indent=4)
+            print("成功导出 papers 表到 papers.json 文件！")
         except mysql.connector.Error as err:
             print(f"操作失败: {err}")
     
@@ -297,8 +326,9 @@ class MySQLManager:
         """
         从文件 domain_id.csv 中导入数据到 domain_id 表
         从文件 domain_url_tag.csv 中导入数据到 domain_url_tag 表
+        从文件 papers.csv 中导入数据到 papers 表
         """
-        import csv
+        import datetime
         try:
             insert_query = """
             INSERT INTO domain_id (domain, id)
@@ -320,6 +350,29 @@ class MySQLManager:
                     values = (row[0], row[1], row[2])
                     self.cursor.execute(insert_query, values)
             print("成功导入 domain_url_tag.csv 文件到 domain_url_tag 表！")
+                # 读取 JSON 文件
+            with open("papers.json", "r", encoding="utf-8") as file:
+                papers = json.load(file)
+            # 逐个存入数据库
+            for paper in papers:
+                """将单个论文记录存入数据库"""
+                paper_date = datetime.strptime(paper["date"], "%Y-%m-%d")
+                sql = """
+                INSERT INTO papers (domain, title, authors, date, state, abstract, paper_url, pdf_url)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                """
+                values = (
+                    paper["domain"],
+                    paper["title"],
+                    paper["authors"],
+                    paper_date,
+                    paper["state"],
+                    paper["abstract"],
+                    paper["paper_url"],
+                    paper["pdf_url"]
+                )
+                self.cursor.execute(sql, values)
+            print("成功导入 papers.json 文件到 papers 表！")
             self.connection.commit()
         except mysql.connector.Error as err:
             print(f"操作失败: {err}")
