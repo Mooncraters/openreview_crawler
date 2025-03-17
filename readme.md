@@ -112,18 +112,24 @@ python main.py -u tag
 
 #### `crawlPaper(self, sub_url, domain)`
 爬取论文详情页，包括论文标题、作者、日期、状态、摘要、主题等信息。
+存储在 papers 表中。
 
 #### `crawlList(self, domain, sub_url, tag)`
-爬取列表页，获取所有论文链接，并翻页。
+如果参数的 sub_url 显示为 2025 年之前，则跳过
+否则，爬取论文列表页
+如果发现连续两个重复的论文 ID，或者爬完所有论文，停止
+将非重复的论文链接存入 id_cache 表中。
 
 #### `crawlMiddle(self, sub_url, domain)`
-找到所有会议里面包含 PDF 的标签页，得到 tag 并存储在数据库中。
+按照广度优先搜索带有 pdf 的标签页，爬取所有链接，得到 tag 并存储在 domain_url_tag 表中。
 
 #### `crawlVenue(self)`
-爬取所有的会议名称 domain。
+从 all venue 中爬取所有的会议名称 domain。
 
 #### `update_paper(self, fix_failed=False)`
-爬取论文信息并根据结果更新缓存和失败记录。
+爬取论文信息
+如果有参数 fix_failed 为 True，先把 failed 表中的数据导入 id_cache 表中，然后删除 failed 表中的数据。
+爬取 id_cache 表中的论文信息，如果爬取成功，则更新 domain_id 表中的论文 ID，如果失败，则存入 failed 表中。
 
 #### `update_list(self)`
 爬取论文列表页。
