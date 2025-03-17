@@ -194,9 +194,9 @@ class MySQLManager:
             print(f"操作失败: {err}")
     
     def save_id(self, domain, forum_list, table = 'id_cache'):
-        try:
-            length = len(forum_list)
-            for id in forum_list:
+        length = 0
+        for id in forum_list:
+            try:
                 insert_query = f"""
                 INSERT INTO {table} (domain, id)
                 VALUES (%s, %s)
@@ -204,10 +204,12 @@ class MySQLManager:
                 values = (domain, id)
                 self.cursor.execute(insert_query, values)
                 self.connection.commit()
-            print(f"成功插入{length}条数据到{table}表！")
-        except mysql.connector.Error as err:
-            print(f"操作失败: {err}")
-            self.connection.rollback()
+                length += 1
+            except mysql.connector.Error as err:
+                print(f"操作失败: {err}")
+                self.connection.rollback()
+                continue
+        print(f"成功插入{length}条数据到{table}表！")
     
     def load_failed_to_cache(self):
         try:
