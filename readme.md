@@ -18,6 +18,7 @@
 ## 数据库结构
 
 ### domain_url_tag
+存储所有期刊会议种类，打开所有的子链接，找到存有 pdf 链接的 tag 页，更新 tag，存储在表 domain_url_tag 中
 
 | 字段名 | 类型 | 描述 |
 | ---- | ---- | ---- |
@@ -27,6 +28,7 @@
 | PRIMARY KEY | (domain, url, tag) | 主键 |
 
 ### id_cache
+存储待爬取的论文 id
 
 | 字段名 | 类型 | 描述 |
 | ---- | ---- | ---- |
@@ -35,6 +37,7 @@
 | PRIMARY KEY | (id) | 主键 |
 
 ### domain_id
+存储已经爬取的论文 id
 
 | 字段名 | 类型 | 描述 |
 | ---- | ---- | ---- |
@@ -43,6 +46,7 @@
 | PRIMARY KEY | (id) | 主键 |
 
 ### failed
+存储爬取失败的论文 id
 
 | 字段名 | 类型 | 描述 |
 | ---- | ---- | ---- |
@@ -51,6 +55,7 @@
 | PRIMARY KEY | (id) | 主键 |
 
 ### papers
+存储论文信息
 
 | 字段名 | 类型 | 描述 |
 | ---- | ---- | ---- |
@@ -95,3 +100,82 @@ python main.py -u paper -f
 ```shell
 python main.py -u tag
 ```
+## 函数和类说明
+
+### Crawler 类
+
+#### `__init__(self, site)`
+初始化爬虫类，设置网站地址和数据库管理器。
+
+#### `browser_init(self)`
+初始化无头浏览器。
+
+#### `crawlPaper(self, sub_url, domain)`
+爬取论文详情页，包括论文标题、作者、日期、状态、摘要、主题等信息。
+
+#### `crawlList(self, domain, sub_url, tag)`
+爬取列表页，获取所有论文链接，并翻页。
+
+#### `crawlMiddle(self, sub_url, domain)`
+找到所有会议里面包含 PDF 的标签页，得到 tag 并存储在数据库中。
+
+#### `crawlVenue(self)`
+爬取所有的会议名称 domain。
+
+#### `update_paper(self, fix_failed=False)`
+爬取论文信息并根据结果更新缓存和失败记录。
+
+#### `update_list(self)`
+爬取论文列表页。
+
+#### `update_tag(self)`
+爬取论文标签页。
+
+### MySQLManager 类
+
+#### `__init__(self, user, password, host, port)`
+初始化数据库管理器，设置数据库连接配置。
+
+#### `connect_to_mysql(self)`
+连接到 MySQL 服务器（不指定数据库）。
+
+#### `ensure_database_exists(self)`
+确保数据库存在，如果不存在则创建它。
+
+#### `connect_to_database(self)`
+连接到目标数据库。
+
+#### `ensure_table_exists(self)`
+确保表存在，如果不存在则创建它。
+
+#### `close(self)`
+关闭数据库连接。
+
+#### `savePaper(self, domain, title, author, date, state, abstract, paper_url, pdf_url)`
+保存论文信息到数据库。
+
+#### `save_visited(self, domain, url, tag)`
+保存已访问的链接和标签到数据库。
+
+#### `load_visited(self)`
+从数据库中加载已访问的链接和标签。
+
+#### `save_id(self, domain, forum_list, table='id_cache')`
+保存论文 ID 到指定表。
+
+#### `load_failed_to_cache(self)`
+将失败的论文 ID 从 `failed` 表加载到 `id_cache` 表。
+
+#### `load_id(self, fix_failed=False)`
+从 `id_cache` 表中加载论文 ID。
+
+#### `load_all(self)`
+将数据库中的数据导出到 CSV 和 JSON 文件。
+
+#### `save_all(self)`
+从 CSV 和 JSON 文件中导入数据到数据库。
+
+### init_db 函数
+
+#### `init_db()`
+初始化数据库连接和表结构。
