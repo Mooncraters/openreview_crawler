@@ -128,7 +128,8 @@ class Crawler:
     def crawlList(self, domain, sub_url, tag):
         """
         爬取列表页
-        翻页
+        如果重复，则记录一下，连续重复两次则停止
+        如果不是连续重复，则认为是该论文又更新，继续爬取
         """
         print(f'========正在爬取{domain}/{tag}的论文ID========')
         def get_page():
@@ -152,6 +153,10 @@ class Crawler:
             if result:
                 return True
             return False
+        # 如果 sub_url 中包含 2025 年之前的年份，则不爬取
+        if re.search(r'202[0-4]', sub_url):
+            print(f'{domain} 2025年之前的论文不再爬取')
+            return
         site = self.site + sub_url + '#tab-' + tag
         self.driver.get(site)
         time.sleep(5) # 延时，等待页面加载完成
@@ -159,8 +164,10 @@ class Crawler:
         cur_page = 1
         right_button = 0 # 右翻页在页面中的位置
         forum_list = []
+        repeat_id = '' # 重复论文的 id
         flag = True
         repeat_papers = 0
+        repeat_flag = False # 记录是否连续的重复
         while flag:
             time.sleep(1)
             try:
@@ -177,12 +184,18 @@ class Crawler:
                         if forum_repeat(href):
                             repeat_papers += 1
                             print(f'爬取重复论文{repeat_papers}篇')
-                        if repeat_papers == 2:
-                            print('重复论文过多，停止爬取')
-                            print(f'爬取{domain}成功，共爬取{len(forum_list)}论文ID')
-                            self.db_manager.save_id(domain, forum_list)
-                            return
-                        forum_list.append(href)
+                            if repeat_flag: # 连续重复两次则停止
+                                print('重复论文过多，停止爬取')
+                                print(f'爬取{domain}成功，共爬取{len(forum_list)}论文ID')
+                                self.db_manager.save_id(domain, forum_list)
+                                return
+                            repeat_flag = True
+                            repeat_id = href
+                        else:
+                            repeat_flag = False
+                            forum_list.append(href)
+                            if repeat_id:
+                                forum_list.append(repeat_id)
                 cur_page = get_page() # 获取当前页码
                 if cur_page == -1:
                     page = 1
@@ -210,9 +223,13 @@ class Crawler:
                     time.sleep(1)
                 except:
                     print('翻页按钮不可点击，停止翻页')
+                    print(f'爬取{domain}成功，共爬取{len(forum_list)}论文ID')
+                    self.db_manager.save_id(domain, forum_list)
                     flag = False
             except:
                 print('停止翻页')
+                print(f'爬取{domain}成功，共爬取{len(forum_list)}论文ID')
+                self.db_manager.save_id(domain, forum_list)
                 break
         # 这里会修改，如果爬取相同的论文就停止翻页
         # 要检测是否翻页成功，不成功则返回
