@@ -71,7 +71,7 @@
 
 ## 建议运行方法
 
-0. 如果第一次运行，一定要先 init
+0. 如果第一次运行，一定要先 init，并且修改 db_info.json 中的数据库用户、密码等信息
 
 ```shell
 python main.py --init
